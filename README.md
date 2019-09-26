@@ -19,9 +19,8 @@ Metro is a tool originally written by a Salesforce employee to make it easy for 
 push docs from their working platform into Confluence. Written in
 Python, it's easy to set up and simple to use. Take a look at the
 
-[metro docs]: doc/html/index.html "metro on ReadTheDocs" for more information.
+[metro docs on ReadTheDocs](https://metro.readthedocs.io/en/latest/) for more information.
 
-Note: This repo is brand new and private. We are setting up the ReadTheDocs last week of September.
 
 Copyright 2019, Salesforce, Inc, under the BSD 3-Clause license.
 
