@@ -1,0 +1,137 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Components &#8212; salesforce-metro 2019-08-01 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Preparing to Import a Markdown Document" href="prepare-to-import-markdown.html" />
+    <link rel="prev" title="Supported Document Types" href="supported-doc.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="components">
+<h1>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h1>
+<p>Importing a document into Confluence involves two Metro components:</p>
+<ol class="arabic simple">
+<li>A <strong>converter</strong> for getting the document into the intermediate representation.</li>
+<li>An <strong>importer</strong> for getting the intermediate representation into Confluence.</li>
+</ol>
+<p>Metro has a converter for each type of document supported. type of document you want to convert. All
+conversion tools produce a zip file with a JSON manifest, <cite>manifest.json</cite>, at the top
+level of the zipped folder tree. This manifest contains information about any pages,
+images, and attachments that have been converted, and how they relate to each other.</p>
+<p>There’s only one importer: <cite>import_pages</cite>. This Python script takes a manifest and a set of
+files (or a zip file containing the manifest and those files) and imports the content into
+Confluence. The manifest is a JSON file that tells <cite>import_pages</cite> where to place the imported
+content, what images and attachments to upload, and so on.</p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">salesforce-metro</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="system-reqs.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported-doc.html">Doc Types</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metro Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prepare-to-import-markdown.html">Markdown Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="markdown-extensions.html">Markdown Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convert-google-doc.html">Google Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="using-zip-files.html">Zip Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="import-quip.html">Quip Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">F.A.Q.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="supported-doc.html" title="previous chapter">Supported Document Types</a></li>
+      <li>Next: <a href="prepare-to-import-markdown.html" title="next chapter">Preparing to Import a Markdown Document</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Salesforce, Inc, under the BSD 3-Clouse license.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/using/components.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

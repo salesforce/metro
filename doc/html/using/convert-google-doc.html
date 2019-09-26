@@ -1,0 +1,158 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Converting a Google Doc &#8212; salesforce-metro 2019-08-01 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using zip files (e.g. with Google Docs)" href="using-zip-files.html" />
+    <link rel="prev" title="Metro-Specific Extensions to Markdown" href="markdown-extensions.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="converting-a-google-doc">
+<h1>Converting a Google Doc<a class="headerlink" href="#converting-a-google-doc" title="Permalink to this headline">¶</a></h1>
+<p>The Google Doc converter is a spreadsheet-based user interface for selecting
+Google documents with some simple metadata. To use it:</p>
+<ol class="arabic">
+<li><p class="first">Create a google sheet that has the format depicted in this figure:</p>
+<div class="figure">
+<a class="reference internal image-reference" href="../_images/gsheet-example.png"><img alt="Use a simple Google Sheet to list your docs and folders." src="../_images/gsheet-example.png" style="width: 492.0px; height: 186.5px;" /></a>
+</div>
+<p>(within Salesforce, you can start with <a class="reference external" href="https://docs.google.com/spreadsheets/d/1EivRWsKI5RxsvBuFgdogCdqiw--0UpQUNl7wyoxuM_c">this spreadsheet</a>).</p>
+</li>
+<li><p class="first">In each row of the spreadsheet:</p>
+</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>In the Resource column, fill in the Google Doc name of a document or a folder containing documents that you want to publish.</li>
+<li>In the File or Folder column, select File or Folder, depending on the type of the resource you specified.</li>
+<li>In the Confluence Parent Page ID column, specify the <a class="reference external" href="https://confluence.atlassian.com/confkb/how-to-get-confluence-page-id-648380445.html">page ID</a> of the Confluence page under which this resource is to be published.</li>
+<li>In the Working Draft column, check the box if you want a badge at the top of your published Confluence page that links to your document in Google Drive.</li>
+<li>Finally, in the Table of Contents column, select the appropriate option. The TOC will be at the top of the finished page. If you want no TOC, select <em>None</em>.</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Delete any extra rows that contain only partial information.</li>
+<li>Now check the box in the first column of each resource you’d like to publish.</li>
+<li>Editing the spreadsheet should reveal the <em>Metro</em> menu at the top of the sheet. Click it and select <em>Show Selected Files</em>
+to bring up a dialog box of the documents you’re publishing.</li>
+<li>In the <em>Metro</em> menu, select <em>Convert to Markdown</em> to convert the selected resources to Markdown. The conversion process can take
+a while, depending on the number and complexity of the documents you’re converting. The process produces a .zip file that you
+can download by clicking the link in the resulting dialogue.</li>
+<li>After downloading the zip file, you can unzip it to inspect or modify its
+contents if you like. When you’re ready to publish it to confluence, you
+can use the <em>import_pages</em> script with the <em>-z</em> option. You don’t need to
+supply a parent page ID, since you’ve already specified one for each page in the spreadsheet.</li>
+</ol>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">salesforce-metro</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="system-reqs.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported-doc.html">Doc Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Metro Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prepare-to-import-markdown.html">Markdown Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="markdown-extensions.html">Markdown Extensions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Google Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="using-zip-files.html">Zip Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="import-quip.html">Quip Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">F.A.Q.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="markdown-extensions.html" title="previous chapter">Metro-Specific Extensions to Markdown</a></li>
+      <li>Next: <a href="using-zip-files.html" title="next chapter">Using zip files (e.g. with Google Docs)</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Salesforce, Inc, under the BSD 3-Clouse license.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/using/convert-google-doc.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

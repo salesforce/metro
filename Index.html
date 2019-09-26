@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script>
+      function onSuccess(url) 
+      {
+        var div = document.getElementById('output');
+        div.innerHTML = 'Your converted documents are available 
+        <a href=' + url + '>here</a>';
+      }
+
+      google.script.run.withSuccessHandler(onSuccess)
+          .convert_to_confluence();
+    </script>
+  </head>
+  <body>
+    <div id="output"></div>
+  </body>
+</html>

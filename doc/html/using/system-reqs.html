@@ -1,0 +1,151 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>System Requirements &#8212; salesforce-metro 2019-08-01 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Supported Document Types" href="supported-doc.html" />
+    <link rel="prev" title="How to Install Metro" href="install.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="system-requirements">
+<h1>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h1>
+<p>Metro is implemented as a Python module (<cite>metro</cite>) and a few utility programs. To use it, you
+need Python 3 and the following modules:</p>
+<ul class="simple">
+<li><cite>keyring</cite> - A portable keyring for storing passwords</li>
+<li><cite>requests</cite> - A module for making HTTP/REST requests</li>
+<li><cite>markdown</cite> - Support for converting Markdown to (X)HTML</li>
+<li><cite>bleach</cite> - An HTML sanitizer module</li>
+</ul>
+<p>If you have a linux or mac, you probably have python already. You can grab the extra modules using the pyton <cite>pip</cite> or <cite>pip3</cite> installers. (This is all standard python functionality. If you are new to python, check out the Beginner’s Guide on the <a class="reference external" href="https://wiki.python.org/moin/BeginnersGuide">python wiki</a>.</p>
+<div class="section" id="installing-trusted-ssl-tls-certificates">
+<h2>Installing Trusted SSL/TLS Certificates<a class="headerlink" href="#installing-trusted-ssl-tls-certificates" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently, metro doesn’t validate certificates, so you can ignore this section. Just make sure you are connected via VPN when you use metro.</p>
+</div>
+<p>Because metro uses Confluence’s REST API to connect to our internal Confluence
+servers, you must install Salesforce’s internal Confluence TLS certificates
+on your machine before you use it. This enables us to verify that connections
+to the Confluence server aren’t intercepted.</p>
+<p>Installing these certificates is so tricky under some circumstances that one of
+our own has written a <a class="reference external" href="https://git.soma.salesforce.com/python-at-sfdc/sfdc_certs_patch">Python module</a> that appends the certificates to those shipped with Python. Arguably not the most
+elegant approach, but it’s pretty foolproof.</p>
+<p>If that’s not your style, you can follow the <a class="reference external" href="https://sites.google.com/a/salesforce.com/how-to-add-a-trusted-certificate-authority/?pli=1">official instructions</a> for installing the Salesforce Confluence TLS root certificates to your machine.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">salesforce-metro</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Requirements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installing-trusted-ssl-tls-certificates">Installing Trusted SSL/TLS Certificates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="supported-doc.html">Doc Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Metro Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prepare-to-import-markdown.html">Markdown Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="markdown-extensions.html">Markdown Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convert-google-doc.html">Google Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="using-zip-files.html">Zip Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="import-quip.html">Quip Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">F.A.Q.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="install.html" title="previous chapter">How to Install Metro</a></li>
+      <li>Next: <a href="supported-doc.html" title="next chapter">Supported Document Types</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Salesforce, Inc, under the BSD 3-Clouse license.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/using/system-reqs.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
