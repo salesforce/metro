@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (c) 2019, salesforce.com, inc.
+# All rights reserved.
+# SPDX-License-Identifier: BSD-3-Clause
+# For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
 #
 # Configuration file for the Sphinx documentation builder.
 #
@@ -20,7 +26,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'salesforce-metro'
-copyright = u'2019, Salesforce, Inc, under the BSD 3-Clouse license'
+copyright = u'2019, Salesforce, Inc, under the BSD 3-Clause license'
 author = u'Anthony Torrero Collins'
 
 # The short X.Y version
