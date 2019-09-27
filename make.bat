@@ -1,5 +1,11 @@
 @ECHO OFF
 
+REM Copyright (c) 2018, salesforce.com, inc.
+REM All rights reserved.
+REM SPDX-License-Identifier: BSD-3-Clause
+REM For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+
 pushd %~dp0
 
 REM Command file for Sphinx documentation
