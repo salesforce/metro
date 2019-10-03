@@ -17,8 +17,6 @@ Google documents with some simple metadata. To use it:
 	:scale: 50%
 	:alt: Use a simple Google Sheet to list your docs and folders.
 
-   
-   (within Salesforce, you can start with `this spreadsheet`_).
 
 2. In each row of the spreadsheet:
    
@@ -44,6 +42,3 @@ Google documents with some simple metadata. To use it:
    can use the *import_pages* script with the *-z* option. You don't need to 
    supply a parent page ID, since you've already specified one for each page in the spreadsheet.
 
-
-.. _this spreadsheet: https://docs.google.com/spreadsheets/d/1EivRWsKI5RxsvBuFgdogCdqiw--0UpQUNl7wyoxuM_c
-.. _page ID: https://confluence.atlassian.com/confkb/how-to-get-confluence-page-id-648380445.html
