@@ -1,4 +1,4 @@
-# Copyright (c) 2018, salesforce.com, inc.
+# Copyright (c) 2019, salesforce.com, inc.
 # All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
@@ -17,14 +17,14 @@ from metro.Manifest import Manifest
 from metro.Confluence import Confluence
 
 # metro module test
+# use this section to test authenticated connection to confluence
+#  and the ability to travel the confluence hierarchy
 if __name__ == "__main__": 
-    server = 'https://confluence.internal.salesforce.com'
-    user = 'jeffreyjohnson'
-#    server = 'https://sfm-confl-lp004.internal.salesforce.com'
-#    user = 'jeffreyjohnson.local'
+    server = # your confluence server, for example 'https://confluence.internal.mynonprofit.org'
+    user = # a user account authenticated on the server 'somedude'
     conf = Confluence(server, user)
-    core_ent_fw_id = 75199145 # Core Entity Framework page
-    core_plat_id = 24281616 # Core Platform page
-    info = conf.info(core_ent_fw_id) 
-    children = conf.children(core_plat_id)
+    some_page_id = # the confluence ID of a page to test, example 75199145 (no quotes)
+    some_page_with_child_pages_id = # the confluence ID of a page with child pages, example 24281616 
+    info = conf.info(some_page_id) 
+    children = conf.children(some_page_with_child_pages_id)
     print(children)
