@@ -1,0 +1,14 @@
+<!-- this file is used by the google doc converter option -->
+<input type="button" value="download" onclick="getUrl()" />
+<script>
+  function getUrl() {
+    google.script.run.withSuccessHandler(download).getDownloadUrl();
+  }
+
+  function download(obj) {
+    var d = document.createElement('a');
+    d.href = obj.url;
+    d.download = obj.filename;
+    d.click();
+  }
+</script>
