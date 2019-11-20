@@ -18,9 +18,10 @@
 // 
 // 1. Navigate to script.google.com.
 // 2. Create a new Google App Script project (named gdoc_to_md, say).
-// 3. Copy/paste gdoc_to_md.gs into the empty script waiting in your project.
+// 3. Copy/paste Code.gs into the empty script waiting in your project.
 // 
-// To select a document for conversion, "star" it by right-clicking it in Google Drive
+// You can use this code in standalone fashion, or as part of a google sheet. For standalone,
+// to select a document for conversion, "star" it by right-clicking it in Google Drive
 // and selecting "Add Star". When you've selected all the docs you want to convert, 
 // run the `convert_to_md()` function in the Script using the Script Editor's 
 // play button. The first time you run this function, you'll have to give Google
@@ -206,4 +207,608 @@ function convert_image(image, doc)
 
   // Generate a filename.
   var filename = doc.prefix + '_' + doc.image_counter + extension;
-  ++
+  ++doc.image_counter;
+  
+  // Get out of any paragraph environment.
+  doc.text += '\n';
+
+  // Stick a link to the image in the text. Use HTML to preserve all the 
+  // image attributes.
+  if (alt_desc === null)
+    alt_desc = filename;
+  doc.text += '<img src="images/' + filename + '" alt="' + alt_desc + '" width="' + width + '" height="' + height + '"/>\n';
+
+  // Add the blob to our list of images.
+  blob.setName(filename);
+  doc.image_blobs.push(blob);
+}
+
+// Converts the given Paragraph element to Markdown, updating the given document.
+function convert_paragraph(para, doc)
+{
+  // Handle the paragraph's heading, if it has one.
+  var heading = para.getHeading()
+  var tag = '';
+  if (heading != DocumentApp.ParagraphHeading.NORMAL)
+  {
+    if (heading == DocumentApp.ParagraphHeading.TITLE)
+      tag = '\n# ';
+    else if (heading == DocumentApp.ParagraphHeading.HEADING1)
+      tag = '\n# ';
+    else if (heading == DocumentApp.ParagraphHeading.HEADING2)
+      tag = '\n## ';      
+    else if (heading == DocumentApp.ParagraphHeading.HEADING3)
+      tag = '\n### ';      
+    else if (heading == DocumentApp.ParagraphHeading.HEADING4)
+      tag = '\n#### ';      
+    else if (heading == DocumentApp.ParagraphHeading.HEADING5)
+      tag = '\n##### ';     
+    else if (heading == DocumentApp.ParagraphHeading.HEADING6)
+      tag = '\n###### ';
+    doc.text += tag;
+
+    // Since we're in a heading, we can reset our prior list items.
+    doc.prior_list_items = [];
+  }
+
+  // Traverse the children of this paragraph element.
+  var num_children = para.getNumChildren()
+  for (var i = 0; i < num_children; ++i)
+  {
+    var elem = para.getChild(i);
+    if (elem.getType() == DocumentApp.ElementType.TEXT)
+      convert_text(elem, doc);
+    else if (elem.getType() == DocumentApp.ElementType.INLINE_IMAGE)
+      convert_image(elem, doc);
+    else if (elem.getType() == DocumentApp.ElementType.LIST_ITEM)
+      convert_list_item(elem, doc);
+    else if (elem.getType() == DocumentApp.ElementType.TABLE)
+      convert_table(elem, doc);
+  }
+  
+  // Close the paragraph with an extra newline.
+  doc.text += '\n';
+}
+
+// Converts the given ListItem element to Markdown, updating the
+//  given document. 
+function convert_list_item(list_item, doc)
+{
+  // I can't believe how dumb list items are. There seems to be no way to 
+  // traverse a list without duplicates. So we keep a list of strings that we 
+  // use to identify list items that we've already traversed. And since Google
+  // App Script is even lamer than Javascript, it doesn't have Javascript's
+  // List or array objects.
+  
+  // Make sure we're not in a paragraph environment.
+  doc.text += '\n';
+
+  // Traverse the list items.
+  var item = list_item;
+  var i = 1;
+  while ((item != null) && (item.getType() == DocumentApp.ElementType.LIST_ITEM))
+  {
+    // Have we seem this before?
+    var item_text = item.getText();
+    var seen_it = false;
+    for (var j = 0; j < doc.prior_list_items.length; ++j)
+    {
+      if (doc.prior_list_items[j] == item_text)
+      {
+        seen_it = true;
+        break;
+      }
+    }
+
+    if (seen_it)
+      break;
+    else
+    {
+      // What glyph type does this list item use?
+      var glyph_type = item.getGlyphType();
+
+      if (doc.format == 'md')
+      {
+        // We use '+' for unordered list elements to avoid the confusion 
+        // surrounding '*' in open-source Markdown parsers.
+        var glyph = '+'; 
+        if (glyph_type == DocumentApp.GlyphType.NUMBER)
+          glyph = i + '.';
+
+        // Indent according to the nesting level.
+        var level = item.getNestingLevel();
+        for (var j = 0; j < level; ++j)
+          doc.text += '    ';
+
+        doc.text += glyph + ' ';
+      }
+      else
+      {
+        if (i == 1)
+        {
+          if (glyph_type == DocumentApp.GlyphType.NUMBER)
+            doc.text += '<ol>\n';
+          else
+            doc.text += '<ul>\n';
+        }
+        doc.text += ' <li>\n';
+      }
+
+      convert_paragraph(item, doc);
+      if (doc.format == 'html')
+        doc.text += ' </li>\n';
+
+      item = item.getNextSibling();
+
+      // Add it to the "done" list.
+      doc.prior_list_items.push(item_text);
+
+      ++i;
+    }
+  }
+  if ((i > 1) && (doc.format == 'html'))
+  {
+    if (glyph_type == DocumentApp.GlyphType.NUMBER)
+      doc.text += '</ol>\n';
+    else
+      doc.text += '</ul>\n';
+  }
+}
+
+// Converts the given Table element to Markdown, updating the given document.
+function convert_table(table, doc)
+{
+  // We can use 1x1 tables with Courier New to indicate code blocks. Other 1x1 tables with 
+  // text just get treated like normal content.
+  var is_code_block = false;
+  var is_single_cell = false;
+  var num_rows = table.getNumRows();
+  if (num_rows == 1)
+  {
+    var row = table.getRow(0);
+    var num_cells = row.getNumCells();
+    if (num_cells == 1)
+    {
+      is_code_block = true;
+      is_single_cell = true;
+      // Okay, we're in a single-cell table. If it contains only paragraphs and 
+      // if the text in those paragraphs is in Courier New font, it's a code block.
+      // Otherwise, it's "just text".
+      var cell = row.getCell(0);
+      var num_children = cell.getNumChildren();
+      for (var i = 0; i < num_children; ++i)
+      {
+        var elem = cell.getChild(i);
+        if (elem.getType() == DocumentApp.ElementType.PARAGRAPH)
+        {
+          var num_children = elem.getNumChildren();
+          for (var j = 0; j < num_children; ++j)
+          {
+            var child = elem.getChild(j);
+            if (child.getType() == DocumentApp.ElementType.TEXT)
+            {
+              var is_code = (child.getFontFamily() in monospace_fonts);
+              if (!is_code)
+              {
+                is_code_block = false;
+                break;
+              }
+            }
+            else
+              is_code_block = false;
+            if (!is_code_block)
+              break;
+          }
+        }
+        else
+          is_code_block = false;
+        if (!is_code_block)
+          break;
+      }
+    }
+  }
+
+  if (is_code_block)
+  {
+    // We just extract the text, since that's all there is.
+    var cell = table.getRow(0).getCell(0);
+    var num_children = cell.getNumChildren();
+    doc.text += '```\n';
+    for (var i = 0; i < num_children; ++i)
+    {
+      var elem = cell.getChild(i);
+      if (elem.getType() == DocumentApp.ElementType.PARAGRAPH)
+      {
+        var num_subelems = elem.getNumChildren();
+        for (var j = 0; j < num_subelems; ++j)
+        {
+          var child = elem.getChild(j);
+          if (child.getType() == DocumentApp.ElementType.TEXT)
+            doc.text += child.getText() + '\n';
+        }
+      }
+    }
+    doc.text += '```\n';
+  }
+  else if (is_single_cell)
+  {
+    // Convert the cell as we would normal content.
+    var cell = table.getRow(0).getCell(0);
+    var num_children = cell.getNumChildren();
+    for (var i = 0; i < num_children; ++i)
+    {
+      var elem = cell.getChild(i);
+      if (elem.getType() == DocumentApp.ElementType.LIST_ITEM)
+        convert_list_item(elem, doc);
+      else if (elem.getType() == DocumentApp.ElementType.PARAGRAPH)
+        convert_paragraph(elem, doc);
+      else if (elem.getType() == DocumentApp.ElementType.TABLE)
+        convert_table(elem, doc);
+    }
+  }
+  else
+  {
+    // Switch to HTML format.
+    var old_format = doc.format;
+    doc.format = 'html';
+
+    // Since Markdown doesn't directly support tables, we use inline HTML.
+    doc.text += '<table class="wrapped">\n';
+
+    // Process each row in the table.
+    for (var r = 0; r < num_rows; ++r)
+    {
+      doc.text += ' <tr>\n';
+      var row = table.getRow(r);
+      var num_cells = row.getNumCells();
+
+      // Process each cell in the table row.
+      for (var c = 0; c < num_cells; ++c)
+      {
+        if (r == 0)
+          doc.text += '  <th>\n';
+        else
+          doc.text += '  <td>\n';
+
+        var cell = row.getCell(c);
+
+        // A table cell can contain list items, paragraphs, and/or tables(!).
+        var num_children = cell.getNumChildren();
+        for (var i = 0; i < num_children; ++i)
+        {
+          var elem = cell.getChild(i);
+          if (elem.getType() == DocumentApp.ElementType.LIST_ITEM)
+            convert_list_item(elem, doc);
+          else if (elem.getType() == DocumentApp.ElementType.PARAGRAPH)
+            convert_paragraph(elem, doc);
+          else if (elem.getType() == DocumentApp.ElementType.TABLE)
+            convert_table(elem, doc);
+        }
+
+        if (r == 0)
+          doc.text += '  </th>\n';
+        else
+          doc.text += '  </td>\n';
+      }
+      doc.text += ' </tr>\n';
+    }
+    doc.text += '</table>\n';
+
+    // Restore the original format.
+    doc.format = old_format;
+  }
+}
+
+// Writes the converted Markdown document and its images to the given folder.
+function write_converted_doc(doc)
+{
+  // Write the Markdown document itself to the doc's folder.
+  var file = doc.folder.createFile(doc.filename, doc.text, 'text/plain');
+
+  // Write the images to the document's image folder.
+  for (var i = 0; i < doc.image_blobs.length; ++i)
+    doc.image_folder.createFile(doc.image_blobs[i]);
+}
+
+function get_blobs(folder, path)
+{
+  var blobs = [];
+  var files = folder.getFiles();
+  while (files.hasNext()) 
+  {
+    var file = files.next().getBlob();
+    file.setName(path + '/' + file.getName());
+    blobs.push(file);
+  }
+  var folders = folder.getFolders();
+  while (folders.hasNext()) 
+  {
+    var f = folders.next();
+    var f_path = path + '/' + f.getName() +'/';
+    blobs.push(Utilities.newBlob([]).setName(f_path));
+    blobs = blobs.concat(get_blobs(f, f_path));
+  }
+  return blobs;
+}
+
+// Zips up the given folder and its contents, adding .zip to its name and returning the file.
+function zip_folder(folder)
+{
+  // Create a list of blobs for the folder.
+  var blobs = get_blobs(folder, folder.getName());
+
+  var zip = Utilities.zip(blobs, folder.getName() + '.zip');
+  return DriveApp.createFile(zip);
+}
+
+// Converts the given document to Markdown, placing the output in 
+// the given folder. Returns a dictionary holding manifest data.
+function convert_file(file_data, folder)
+{
+  // Access the file as a document.
+  var doc = DocumentApp.openById(file_data['id']);
+  Logger.log('Converting ' + doc.getName() + '.')
+
+  // This dictionary holds all the data for the converted doc.
+  conv_doc = {};
+
+  // Get the title of the document.
+  conv_doc.title = doc.getName();
+
+  // Create a file prefix for this doc, replacing spaces with underscores.
+  conv_doc.prefix = doc.getName().replace(/ /g, '_');
+
+  // Create a folder that holds all the doc's stuff, and an images folder 
+  // within it.
+  conv_doc.folder = folder.createFolder(conv_doc.prefix);
+  conv_doc.image_folder = conv_doc.folder.createFolder('images');
+
+  // Point at the generated file within the folder.
+  conv_doc.filename = conv_doc.prefix + '.md';
+
+  // Reset the blobs list and counter.
+  conv_doc.image_counter = 0;
+  conv_doc.image_blobs = [];
+
+  // Doc text.
+  conv_doc.text = '';
+
+  // An array of list items, because Stupid.
+  conv_doc.prior_list_items = [];
+
+  // Formatting can be Markdown ("md") or HTML ("html"). We switch while
+  // in tables.
+  conv_doc.format = 'md';
+
+  // Access the document's body and convert each element.
+  var body = doc.getBody();
+  var num_children = body.getNumChildren();
+  for (var i = 0; i < num_children; ++i)
+  {
+    var elem = body.getChild(i);
+    if (elem.getType() == DocumentApp.ElementType.LIST_ITEM)
+      convert_list_item(elem, conv_doc);
+    else if (elem.getType() == DocumentApp.ElementType.PARAGRAPH)
+      convert_paragraph(elem, conv_doc);
+    else if (elem.getType() == DocumentApp.ElementType.TABLE)
+      convert_table(elem, conv_doc);
+    else if (elem.getType() == DocumentApp.ElementType.INLINE_IMAGE)
+      convert_image(elem, conv_doc);
+  }
+  
+  // Write out the converted doc.
+  write_converted_doc(conv_doc);
+
+  // Generate a manifest entry for the doc.
+  manifest = {};
+  manifest.folder = conv_doc.prefix;
+  manifest.file = conv_doc.filename;
+  manifest.parent_id = file_data['parent_id'];
+  manifest.title = conv_doc.title;
+  manifest.operation = 'create';
+  manifest.overwrite = true;
+  image_files = [];
+  for (var i = 0; i < conv_doc.image_blobs.length; ++i)
+    image_files.push('images/' + conv_doc.image_blobs[i].getName());
+
+  manifest.images = image_files;
+  manifest.attachments = [];
+
+  // If this file is a working draft, add a link to the Google doc.
+  if (file_data['working_draft'])
+    manifest.working_draft = doc.getUrl();
+  
+  // Do we need a table of contents?
+  if (file_data['table_of_contents'] != false)
+    manifest.table_of_contents = file_data['table_of_contents'];
+
+  return manifest;
+}
+
+// Makes a list of documents referenced in our spreadsheet, either directly or 
+// by their parent folder.
+function gather_docs()
+{
+  // Access our "Metro" spreadsheet.
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheets()[0];
+  
+  // Loop over the rows in the spreadsheet and build a dictionary of file data.
+  var data = sheet.getDataRange().getValues();
+  var file_data = {};
+  for (var row = 1; row < data.length; ++row)
+  {
+    var publish = data[row][0]; // selected for publication?
+    var resource = data[row][1]; // resource name
+    if (publish && (resource.length > 0))
+    {
+      var type = data[row][2]; // 'File' or 'Folder'
+      var parent_page_id = parseInt(data[row][3], 10); // Confluence parent page ID
+      var working_draft = false;
+      if (data[row][4] == true)
+        working_draft = true;
+      var table_of_contents = false;
+      if ((data[row][5] != '') && (data[row][5] != 'None'))
+      {
+        var max_level = null;
+        var substr = data[row][5].substring(9, 10);
+        if (substr != null)
+          max_level = parseInt(substr, 10);
+        if (max_level != null)
+          table_of_contents = {'max_level': max_level};
+      }
+      Logger.log(resource + ': ' + type + ', ' + parent_page_id + ', ' + working_draft + ', ' + table_of_contents);
+    
+      // If we're dealing with a folder, traverse the folder and add all its contents to our dictionary.
+      if (type == 'Folder')
+      {
+        var folders = DriveApp.getFoldersByName(resource);
+        while (folders.hasNext())
+        {
+          var folder = folders.next();
+          var files = folder.getFilesByType('application/vnd.google-apps.document');
+          while (files.hasNext())
+          {
+            var file = files.next();
+            file_data[file.getName()] = {'id': file.getId(),
+                                         'parent_id': parent_page_id,
+                                         'working_draft': working_draft,
+                                         'table_of_contents': table_of_contents};
+          }
+        }
+      }
+      // Otherwise, just add the data for this file.
+      else
+      {
+        var files = DriveApp.getFilesByName(resource);
+        while (files.hasNext())
+        {
+          var file = files.next();
+          file_data[file.getName()] = {'id': file.getId(),
+                                       'parent_id': parent_page_id,
+                                       'working_draft': working_draft,
+                                       'table_of_contents': table_of_contents};
+        }
+      }
+    }
+  }
+  
+  return file_data;
+}
+
+// Shows a list of files selected for publication in a nice table.
+function show_selected_files()
+{
+  var ui = SpreadsheetApp.getUi();
+
+  // Gather all documents identified in the spreadsheet.
+  var file_data = gather_docs();
+
+  // If there are no files selected for publication, pop up an alert and return.
+  if (Object.keys(file_data).length == 0)
+  {
+    ui.alert("There are no files selected for publication. Select a row in the spreadsheet and make sure its information matches one of your files or folders.", ui.ButtonSet.OK);
+    return;
+  }
+  
+  // Assemble an HTML table to display the selected files.
+  var text = '<style>\ntable, th, td {\n border: 1px solid black;\n}\n</style>\n<table>\n<tr><th>Title</th><th>Parent Page ID</th><th>Working draft?</th><th>Table of contents?</th></tr>\n';
+  for (var filename in file_data)
+  {
+    var data = file_data[filename];
+    var doc = DocumentApp.openById(data['id']);
+    var url = doc.getUrl();
+    var draft = 'No';
+    if (data['working_draft'])
+      draft = 'Yes';
+    var toc = 'No';
+    if (data['table_of_contents'] != false)
+      toc = 'Yes';
+    text += '<tr><td><a href="' + url + '" target="_blank">' + filename + '</a></td><td>' + data['parent_id'] + '</td><td>' + draft + '</td><td>' + toc + '</td></tr>\n';
+  }
+  text += '</table>\n<br>\n';
+  text += '<input type="button" value="Close" onclick="google.script.host.close()"/>\n';
+  
+  // Pop up a dialog with the table.
+  var html = HtmlService.createHtmlOutput(text);
+  ui.showModalDialog(html, 'Files Selected for Publication');
+}
+
+// Converts the contents of our Confluence conversion folder to a folder named
+// Metro-<timestamp.zip with files written in Markdown.
+function convert_to_md() 
+{
+  var ui = SpreadsheetApp.getUi();
+
+  // Create a timestamp.
+  var timestamp = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd'T'HHmmss'Z'");
+
+  // Gather all documents identified in the spreadsheet.
+  var file_data = gather_docs();
+
+  // If there are no files selected for publication, pop up an alert and return.
+  if (Object.keys(file_data).length == 0)
+  {
+    ui.alert("There are no files selected for publication. Select a row in the spreadsheet and make sure its information matches one of your files or folders.", ui.ButtonSet.OK);
+    return;
+  }
+  
+  // Make a folder that will hold converted documents.
+  var conv_folder_name = 'Metro-' + timestamp;
+  var conv_folder = DriveApp.createFolder(conv_folder_name);
+  
+  // Pages for the manifest.
+  pages = [];
+
+  for (var filename in file_data)
+  {
+    var data = file_data[filename];
+
+    // Convert the doc to Markdown.
+    doc_manifest = convert_file(data, conv_folder);
+
+    // Append this doc to our list of pages.
+    pages.push(doc_manifest);
+  }
+
+  // Write the manifest file.
+  var manifest = {};
+  manifest.pages = pages;
+  conv_folder.createFile('manifest.json', JSON.stringify(manifest, null, 2));
+
+  // Create a zipfile containing the folder and remove the original.
+  var zip = zip_folder(conv_folder);
+  DriveApp.removeFolder(conv_folder);
+  
+  // Get our SSO username.
+  var user_email = Session.getActiveUser().getEmail();
+  var username = user_email.substring(0, user_email.indexOf('@'));
+  
+  // Pop up a dialog with a link to the zip file.
+  var zip_url = 'https://docs.google.com/uc?export=download&id=' + zip.getId();
+  var text = '<p>Your documents have been converted to Markdown and zipped up here: <a href="' + zip_url + '">' + zip.getName() + '</a>.</p>\n';
+  text += '<code>./import_pages -z ' + zip.getName() + ' -u ' + username + '</code>\n';
+  text += '<br><input type="button" value="Close" onclick="google.script.host.close()"/>\n';
+  var html = HtmlService.createHtmlOutput(text).setWidth(400).setHeight(300);
+  ui.showModalDialog(html, 'Conversion completed');
+}
+
+// This function displays help for Metro.
+function help()
+{
+  var page = "https://metro.readthedocs.io/en/latest/using/convert-google-doc.html";
+  var text = "<script>window.open('" + page + "');google.script.host.close();</script>";
+  var html = HtmlService.createHtmlOutput(text);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Metro Help');
+}
+
+// This function runs when the Metro spreadsheet is opened.
+function onOpen() 
+{
+  SpreadsheetApp.getUi()
+      .createMenu('Metro')
+      .addItem('Show Selected Files', 'show_selected_files')
+      .addItem('Convert to Markdown', 'convert_to_md')
+      .addItem('Metro Help (SFM Required)', 'help')
+      .addToUi();
+}
