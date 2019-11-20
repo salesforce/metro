@@ -40,8 +40,5 @@ Google documents with some simple metadata. To use it:
 
 9. In the *Metro* menu, select *Convert to Markdown* to convert the selected resources to Markdown. The conversion process can take a while, depending on the number and complexity of the documents you're converting. The process produces a .zip file that you can download by clicking the link in the resulting dialogue.
 
-10. After downloading the zip file, you can unzip it to inspect or modify its 
-   contents if you like. When you're ready to publish it to confluence, you 
-   can use the *import_pages* script with the *-z* option. You don't need to 
-   supply a parent page ID, since you've already specified one for each page in the spreadsheet.
+10. After downloading the zip file, you can unzip it to inspect or modify its contents if you like. When you're ready to publish it to confluence, you can use the *import_pages* script with the *-z* option. You don't need to supply a parent page ID, since you've already specified one for each page in the spreadsheet.
 
