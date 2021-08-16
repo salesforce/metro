@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+
+# Copyright (c) 2018, salesforce.com, inc.
+# All rights reserved.
+# SPDX-License-Identifier: BSD-3-Clause
+# For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+from metro import Confluence, Manifest
+
+def error(message):
+    """error(message) -> Prints message to stdout and exits."""
+    print(message)
+    exit(-1)
+
+def output_from_manifest(folder, manifest_json):
+    """output_from_manifest(confluence, manifest_json)
+Converts the contents of the given manifest JSON file to XHTML and writes the resulting 
+files the given folder."""
+    # Validate the manifest and create an object for it.
+    manifest = Manifest(manifest_json)
+
+    # Write the content from all pages to xhtml files in our folder.
+    import os, os.path
+    if os.path.dirname(folder) != '':
+        os.makedirs(folder, exist_ok=True)
+    elif not os.path.exists(folder):
+        os.mkdir(folder)
+    all_pages = manifest.pages_to_create + manifest.pages_to_update
+    for page in all_pages:
+        with open(os.path.join(folder, page.title.replace(' ', '_') + '.xhtml'), 'w') as f:
+            f.write(page.body)
+
+def output_from_zipfile(folder, zipfile):
+    """output_from_zipfile(folder, zipfile)
+Converts the contents of the given zip file to XHTML and writes the resulting files to the
+given folder. The zip file contains a folder with a manifest.json file at the top 
+level that describes one or more pages whose assets are stored in subfolders within 
+the zip file."""
+    # Crack open the zipfile and get its contents.
+    from zipfile import ZipFile
+    import os.path
+    with ZipFile(zipfile) as zippy:
+        # Look for manifest.json. It should be at the top-level directory.
+        entries = zippy.namelist()
+        top_dir = None
+        for e in entries:
+            if 'manifest.json' in e: 
+                top_dir = os.path.dirname(e)
+                break
+        if top_dir is None:
+            error('The zipfile %s does not contain manifest.json.'%zipfile)
+
+        # Extract the contents of the zip file to a temporary directory.
+        import tempfile
+        staging_dir = tempfile.mkdtemp()
+        zippy.extractall(path = staging_dir)
+
+        # Validate the manifest and create an object for it.
+        manifest_json = os.path.join(staging_dir, top_dir, 'manifest.json')
+        manifest = Manifest(manifest_json)
+
+        # Write the content from all pages to xhtml files in our folder.
+        import os, os.path
+        if os.path.dirname(folder) != '':
+            os.makedirs(folder, exist_ok=True)
+        elif not os.path.exists(folder):
+            os.mkdir(folder)
+        all_pages = manifest.pages_to_create + manifest.pages_to_update
+        for page in all_pages:
+            with open(os.path.join(folder, page.title.replace(' ', '_') + '.xhtml'), 'w') as f:
+                f.write(page.body)
+
+        # Remove the staging directory.
+        from shutil import rmtree
+        rmtree(staging_dir)
+
+def import_from_manifest(confluence, manifest_json):
+    """import_from_manifest(confluence, manifest_json)
+Given a Confluence server object and a manifest JSON file path, this function 
+imports the assets in the manifest to the Confluence server according to 
+the instructions in that manifest."""
+    # Validate the manifest and create an object for it.
+    manifest = Manifest(manifest_json)
+
+    # If we're asked to create new pages, do that first.
+    for page in manifest.pages_to_create:
+        confluence.create_page(page.parent_id, page)
+
+    # If we're asked to update pages, do that next.
+    for page in manifest.pages_to_update:
+        confluence.update_page(page.id, page)
+
+    # Delete any pages we're asked to delete.
+    for page in manifest.pages_to_delete:
+        confluence.delete_page(page.id)
+
+def import_from_zipfile(confluence, zipfile, parent_page_id = None):
+    """import_from_zipfile(confluence, zipfile, parent_page_id = None)
+Imports the contents of the given zip file to one or more pages under the 
+parent page whose ID is parent_page_id. The zip file contains a folder with 
+a manifest.json file at the top level that describes one or more pages 
+whose assets are stored in subfolders within the zip file."""
+    # Crack open the zipfile and get its contents.
+    from zipfile import ZipFile
+    import os.path
+    with ZipFile(zipfile) as zippy:
+        # Look for manifest.json. It should be at the top-level directory.
+        entries = zippy.namelist()
+        top_dir = None
+        for e in entries:
+            if 'manifest.json' in e: 
+                top_dir = os.path.dirname(e)
+                break
+        if top_dir is None:
+            error('The zipfile %s does not contain manifest.json.'%zipfile)
+
+        # Extract the contents of the zip file to a temporary directory.
+        import tempfile
+        staging_dir = tempfile.mkdtemp()
+        zippy.extractall(path = staging_dir)
+
+        # Validate the manifest and create an object for it.
+        manifest_json = os.path.join(staging_dir, top_dir, 'manifest.json')
+        manifest = Manifest(manifest_json)
+
+        # Any missing parent IDs?
+        for page in manifest.pages_to_create:
+            if not page.parent_id and not parent_page_id:
+                error("At least one of the pages in this zipfile's manifest is missing a parent page ID. " + 
+                      'You can edit the manifest or supply a "catch-all" parent page ID with -p.')
+
+        # If we're asked to create new pages, do that first.
+        for page in manifest.pages_to_create:
+            success = confluence.create_page(parent_page_id, page)
+
+        # If we're asked to update pages, do that next.
+        for page in manifest.pages_to_update:
+            confluence.update_page(page.id, page)
+
+        # Delete any pages we're asked to delete.
+        for page in manifest.pages_to_delete:
+            confluence.delete_page(page.id)
+
+        # Remove the staging directory.
+        from shutil import rmtree
+        rmtree(staging_dir)
+
+def dispatch(options):
+    """Dispatches the work of importing pages to Confluence."""
+    # Which mode are we in? Are we using a manifest by itself, or do we have 
+    # a zip file?
+    if options.output:
+        if options.manifest:
+            output_from_manifest(options.output, options.manifest)
+        else:
+            output_from_zipfile(options.output, options.zipfile)
+    else:
+        # Create a Confluence thingy that we'll use to import the goods.
+        conf = Confluence(options.server, options.user)
+
+        if options.manifest:
+            import_from_manifest(conf, options.manifest)
+        else:
+            import_from_zipfile(conf, options.zipfile, options.parentid)
+
+def main():
+
+    # Default Confluence server.
+    dev_server = 'https://sfm-confl-lp004.internal.salesforce.com'
+    prod_server = 'https://confluence.internal.salesforce.com'
+
+    # Program description.
+    desc = """Imports assets (pages, images, attachments) to a Confluence server.
+Information can be given one of two ways:
+
+  1. A manifest JSON file, specified with the -m FILE or --manifest=FILE 
+     option, that points at several pages to be published. The files and 
+     images in a page are specified relative to a "folder" path, which can 
+     be an absolute path, or a path relative to the current working directory.
+
+     Here's an example of such a manifest (manifest.json):
+
+     ---- 
+{
+  "pages": {
+    {
+      "folder": "page1",
+      "file": "page1.md",
+      "parent_id": 75199145,
+      "operation": "create",
+      "overwrite": true,
+      "images": ["image1.png", "image2.png"],
+      "attachments": ["hello.gs", "hi_mom.pdf", "attachment_pic.png"]
+    },
+    {
+      "folder": "page2",
+      "file": "page2.md",
+      "parent_id": 75199146,
+      "operation": "create",
+      "overwrite": false,
+      "images": ["image3.png", "image4.png"]
+    }
+  },
+  "publisher": "jeffreyjohnson@salesforce.com",
+  "publish_date": "timestamp"
+}
+
+    ----
+
+  2. A zip file, specified with the -z FILE or --zipfile=FILE options, 
+     containing a directory tree with a manifest.json file at the root level. 
+     In this case, all pages are published under a parent page whose ID is 
+     given by the -p ID or -­parentid ID option. Folder paths are given 
+     relative to the root of the zipfile's directory tree.
+
+     Here's an example of a "zipfile" manifest (manifest.json):
+
+     ---- 
+{
+  "pages": {
+    {
+      "title": "Page 1",
+      "folder": "page1",
+      "file": "page1.xhtml",
+      "overwrite": true,
+      "images": ["image1.png", "image2.png"],
+      "attachments": ["hello.gs", "hi_mom.pdf", "attachment_pic.png"],
+    },
+    {
+      "title": "Page 2",
+      "folder": "page2",
+      "file": "page2.xhtml",
+      "overwrite": false,
+      "images": ["image3.png", "image4.png"]
+    }
+  },
+  "publisher": "jeffreyjohnson@salesforce.com",
+  "publish_date": "timestamp"
+}
+
+    ----
+"""
+
+    # Maybe we want some more stuff after the descriptions of options.
+    back_matter = """
+"""
+
+    # Use Python's nifty-keen argument parser.
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description = desc, epilog = back_matter)
+    parser.add_argument('-m', '--manifest', metavar='manifest', type=str, 
+                        default=None,
+                        help='The path for a manifest (JSON) file that identifies the assets to import.')
+    parser.add_argument('-z', '--zipfile', metavar='zipfile', type=str, 
+                        default=None,
+                        help='The path for a zip file that contains the assets to import.')
+    parser.add_argument('-p', '--parentid', metavar='parentid', type=int, 
+                        default=None,
+                        help='The ID of the parent page under which the pages in a zipfile are published. Use this option with -z.')
+    parser.add_argument('-s', '--server', metavar='server', type=str,
+                        default=prod_server,
+                        help='The Confluence server to which assets are imported. Can be a URI, "dev", or "prod". (Default: "prod")')
+    parser.add_argument('-u', '--user', metavar='user', type=str,
+                        default=None,
+                        help='The Confluence username under which assets are published.')
+    parser.add_argument('-o', '--output', metavar='output', type=str,
+                        default=None,
+                        help='Instead of importing to Confluence, output Markdown files to a folder.')
+    parser.add_argument('--profile', action='store_true',
+                        help='Generate a performance profile report.')
+    options = parser.parse_args()
+
+    # Validate.
+    if options.manifest is None and options.zipfile is None:
+        parser.error('You must specify either a zipfile (-z) or a manifest (-m).')
+    if options.manifest is not None and options.parentid is not None:
+        parser.error('You can\'t specify a parent ID (-p) with a manifest file (-m).')
+    if options.server != prod_server:
+        if options.server.lower() == 'dev':
+            options.server = dev_server
+        elif options.server.lower() != 'prod' and \
+             'https://' not in options.server.lower():
+            parser.error('Invalid server: %s'%options.server)
+
+    if options.profile:
+        import profile
+        profile.runctx('dispatch(options)', globals(), locals())
+    else:
+        dispatch(options)
+
+if __name__ == "__main__": 
+    main()

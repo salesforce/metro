@@ -1,0 +1,182 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Metro-Specific Extensions to Markdown &#8212; salesforce-metro 2019-08-01 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Converting a Google Doc" href="convert-google-doc.html" />
+    <link rel="prev" title="Preparing to Import a Markdown Document" href="prepare-to-import-markdown.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="metro-specific-extensions-to-markdown">
+<h1>Metro-Specific Extensions to Markdown<a class="headerlink" href="#metro-specific-extensions-to-markdown" title="Permalink to this headline">¶</a></h1>
+<p>Because Markdown is so spartan in terms of markup features, and because Confluence has some
+nifty macros we like to use, we have added some metro-specific stuff to Markdown.</p>
+<ul>
+<li><p class="first">Info</p>
+<ul class="simple">
+<li>Use <em>&gt; Info: text</em> to place text into a grey <a class="reference external" href="https://confluence.atlassian.com/doc/info-tip-note-and-warning-macros-51872369.html">Confluence Info</a> block.</li>
+<li>Alternatively, use <em>~?text?~</em>.</li>
+</ul>
+</li>
+<li><p class="first">Notes</p>
+<ul class="simple">
+<li>Use <em>&gt; Note: text</em> to place text into a yellow <a class="reference external" href="https://confluence.atlassian.com/doc/info-tip-note-and-warning-macros-51872369.html">Confluence Note</a> block.</li>
+<li>Alternatively, use <em>~!text!~</em>.</li>
+</ul>
+</li>
+<li><p class="first">Warnings</p>
+<ul class="simple">
+<li>Use <em>&gt; Warning: text</em> to place text into a red <a class="reference external" href="https://confluence.atlassian.com/doc/info-tip-note-and-warning-macros-51872369.html">Confluence Warning</a> block.</li>
+<li>Alternatively, use <em>~%text%~</em>.</li>
+</ul>
+</li>
+<li><p class="first">Panels</p>
+<ul class="simple">
+<li>Use <em>&gt; Panel: title</em> to create a <a class="reference external" href="https://confluence.atlassian.com/doc/panel-macro-51872380.html">Confluence Panel</a>  with the given title. Use <em>&gt; text</em> on subsequent lines
+to put text into the body of the Panel. The Panel is closed with the first line not beginning with <em>&gt;</em>.</li>
+</ul>
+</li>
+<li><p class="first">Collapsible content</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Use <em>&gt; Expand: title</em> to create a <a class="reference external" href="https://confluence.atlassian.com/doc/expand-macro-223222352.html">Confluence Expand</a></dt>
+<dd><p class="first last">macro with the given title. Use <cite>&gt; *text*</cite> on subsequent lines to put text into the collapsible portion. The
+Expand environment is closed with the first line not beginning with <em>&gt;</em>.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">The <em>title</em> must be text and not a link. You click the title to expand the collapsed content, not to go somewhere.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently, Metro doesn’t support the use of nested Expand macros.</p>
+</div>
+</li>
+<li><p class="first">If you want a button that expands all Expand macros on your page, you can add one with <em>&gt; ExpandAll</em>.</p>
+</li>
+</ul>
+</li>
+<li><p class="first">Other HTMLisms (as allowed by standard Markdown):</p>
+<blockquote>
+<div><ul class="simple">
+<li>HTML tables</li>
+<li>HTML anchors. Use <cite>&lt;a id=”anchorName”&gt;&lt;/a&gt;</cite> to make one, and make sure you use the
+<a class="reference external" href="https://confluence.atlassian.com/doc/anchors-139442.html">Confluence Anchor syntax</a> to link to it (it’s more complicated than you might think).</li>
+<li>HTML images, links, etc</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>Let us know if you have problems with anything that you’d expect to work.</p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">salesforce-metro</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="system-reqs.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported-doc.html">Doc Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Metro Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prepare-to-import-markdown.html">Markdown Docs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Markdown Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convert-google-doc.html">Google Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="using-zip-files.html">Zip Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="import-quip.html">Quip Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">F.A.Q.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="prepare-to-import-markdown.html" title="previous chapter">Preparing to Import a Markdown Document</a></li>
+      <li>Next: <a href="convert-google-doc.html" title="next chapter">Converting a Google Doc</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Salesforce, Inc, under the BSD 3-Clouse license.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/using/markdown-extensions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

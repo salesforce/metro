@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+
+
+# Copyright (c) 2019, salesforce.com, inc.
+# All rights reserved.
+# SPDX-License-Identifier: BSD-3-Clause
+# For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+from metro import quip
+import os, os.path, imghdr, string
+
+def error(message):
+    """error(message) -> Prints message to stdout and exits."""
+    print(message)
+    exit(-1)
+
+def authenticate(user):
+    """Authenticates the user, returning a new Quip client object on success, 
+and None on failure."""
+
+    # Fetch our username and password. 
+    import keyring, getpass
+    if user is None:
+        user = getpass.getuser()
+    key = 'quip_api'
+    token = keyring.get_password(key, user)
+
+    # We repeat the authentication process till it works.
+    while True:
+        if token is None:
+            token_url = 'https://salesforce.quip.com/dev/token'
+            token = getpass.getpass(prompt="Enter a Quip API access token for {user}.\n(You can create a new access token at {url})\nAccess token: ".format(user = user, url = token_url))
+            keyring.set_password(key, user, token)
+
+        # Try authenticating with the token.
+        try:
+            client = quip.QuipClient(token)
+            u = client.get_authenticated_user()
+            break
+        except quip.QuipError:
+            print('Quip: Invalid access token!')
+            token_url = 'https://salesforce.quip.com/dev/token'
+            token = getpass.getpass(prompt="Enter a Quip API access token for {user}.\n(You can create a new access token at {url})\nAccess token: ".format(user = user, url = token_url))
+            keyring.set_password(key, user, token)
+
+    return client
+
+# This HTMLParser subclass converts Quip's HTML pidgin to our Markdown pidgin.
+from html.parser import HTMLParser
+class MDConverter(HTMLParser):
+    def __init__(self, title):
+        HTMLParser.__init__(self)
+        self.title = title
+        self.md = ''
+        self.blobs = []
+        self.mode = 'md'
+        self.last_tag = None
+        self.listitem = []
+        self.html2md = {'h1': '#', 
+                        'h2': '##', 
+                        'h3': '###', 
+                        'h4': '####', 
+                        'h5': '#####', 
+                        'h6': '#######',
+                        'li': '+',
+                        'b': '**',
+                        'i': '_',
+                        'del': '-',
+                        'code': '`',
+                        'blockquote': '```\n',
+                        'p': '\n\n',
+                        'a': 'a',
+                        'img': 'img',
+                        'br': '\n'
+                       }
+        self.tags = []
+        from bleach.sanitizer import Cleaner
+        self.allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'pre', 'code', 'em', 
+                             'i', 'li', 'ol', 'strong', 'ul', 'p', 'h1', 'h2', 'h3', 
+                             'h4', 'h5', 'h6', 'img', 'table', 'th', 'tbody', 'tr', 'td']
+        self.allowed_attrs = {'a': ['href', 'title', 'id'], 
+                              'abbr': ['title'], 
+                              'acronym': ['title'],
+                              'img': ['alt', 'src', 'width', 'height']}
+        self.cleaner = Cleaner(tags=self.allowed_tags, attributes=self.allowed_attrs)
+
+    def handle_starttag(self, tag, attrs): # called when a tag is opened
+#        print('encountered tag: %s'%tag)
+        if tag == 'table':
+            # In table mode, we use straight HTML.
+            self.mode = 'html'
+        elif tag == 'ol':
+            self.listitem.append(1)
+        elif tag == 'ul':
+            self.listitem.append('+')
+        elif tag in ['pre', 'div', 'span'] and 'prettyprint' in [attr[1] for attr in attrs]:
+            tag = 'blockquote'
+            # If the last tag was a list item, erase it.
+            if self.last_tag == 'li':
+                self.md = self.md[:self.md.rindex('+ '):]
+                self.tags.pop(-1)
+                self.last_tag = self.tags[-1]
+        if (self.mode == 'html' and tag in self.allowed_tags) or \
+            tag in ['a', 'img']:
+            if len(attrs) > 0:
+                tag_str = '%s '%tag
+                for attr in attrs:
+                    if '/blob' in attr[1]:
+                        val = attr[1][1:]
+                        self.blobs.append(os.path.basename(val))
+                    else:
+                        val = attr[1]
+                    tag_str += '%s="%s" '%(attr[0], val)
+            else:
+                tag_str = '%s'%tag
+            self.md += '<%s>'%tag_str
+        elif tag == 'li':
+            indent = '  ' * (len(self.listitem)-1)
+            if self.last_tag == 'ol':
+                item = self.listitem[-1]
+                self.md += '%s%i. '%(indent, item)
+                self.listitem[-1] = item + 1
+            else:
+                self.md += '%s+ '%indent
+        elif tag in self.html2md.keys():
+            self.md += '%s'%self.html2md[tag]
+            self.tags.append(tag)
+            self.last_tag = tag
+
+    def handle_endtag(self, tag): # called when a tag is closed
+#        print('this tag: %s'%tag)
+#        print('last tag: %s'%self.last_tag)
+        if tag in ['pre', 'div', 'span'] and self.last_tag == 'blockquote':
+            tag = 'blockquote'
+            # We need to stick the closing tag on its own line.
+            self.md += '\n'
+        if (self.mode == 'html' and tag in self.allowed_tags) or \
+            tag in ['a', 'img']:
+            self.md += '</%s>'%tag
+        elif tag in ['b', 'i', 'del', 'code']:
+            # Transpose whitespace to preserve formatting in Markdown.
+            if self.md[-1] in string.whitespace:
+                ws = self.md[-1]
+                self.md = self.md.rstrip() + '%s%s'%(self.html2md[tag], ws)
+            else:
+                self.md += '%s'%self.html2md[tag]
+        elif tag in ['blockquote', 'p']:
+            self.md += '%s'%self.html2md[tag]
+        elif tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li']:
+            self.md += '\n'
+        if tag == 'table':
+            self.mode = 'md'
+        elif tag in ['ol', 'ul']:
+            self.listitem.pop(-1)
+        if len(self.tags) > 0:
+            if tag in self.html2md.keys():
+                self.tags.pop(-1)
+                if len(self.tags) > 0:
+                    self.last_tag = self.tags[-1]
+                else:
+                    self.last_tag = None
+        else:
+            self.last_tag = None
+
+    def handle_data(self, data): # called between tags
+#        print('**last tag: %s'%self.last_tag)
+        if self.mode == 'html':
+            data = self._scrub(data)
+        else:
+            data = data.replace('\n', '').replace('#', '&#35;')
+#        print('data: %s'%data)
+        self.md += '%s'%data
+
+    def _scrub(self, html):
+        if self.mode == 'html':
+            return self.cleaner.clean(html)
+        else:
+            return html
+
+def convert_threads(client, options, zip_path):
+    """Converts the given thread to Markdown, generating a zipfile with the given 
+absolute path."""
+
+    parent_id = options.parentid
+    output_html = options.html
+    output_md = options.markdown
+    threads = options.threads
+
+    # Open a zip file for writing unless we're writing out Markdown.
+    if not output_md:
+        from zipfile import ZipFile
+        zippy = ZipFile(zip_path, mode='w')
+
+    # Now convert the threads and construct a JSON manifest.
+    manifest = {}
+    manifest['pages'] = []
+    for thread in threads:
+        print("quip_to_md: Converting thread %s"%thread)
+        stuff = client.get_thread(thread)
+        title = stuff['thread']['title']
+    #    typ = stuff['thread']['type']
+    #    if typ != 'document':
+    #        error('Thread %s is a %s, not a document.'%(thread, stuff['type']))
+
+        # Quip gives us HTML, so it's on us to convert it to Markdown. 
+        conv = MDConverter(title)
+        html = stuff['html']
+        if output_html:
+            print('Writing %s.html.'%thread)
+            with open('%s.html'%thread, mode='w') as htmly:
+                htmly.write(html)
+        conv.feed(html)
+
+        # Clean things up a bit.
+        conv.md = conv.md.replace('\n\n\n', '\n\n')
+
+        # Retrieve any related blobs.
+        blobs = {}
+        for blob_name in conv.blobs:
+            print(" %s: Reading blob %s"%(thread, blob_name))
+            blob = client.get_blob(thread, blob_name)
+            blob_data = blob.read()
+
+            # Write out the blob as a standalone file to get its type.
+            blob_ext = ''
+            with open(blob_name, mode='wb') as blobby:
+                blobby.write(blob_data)
+            what = imghdr.what(blob_name)
+            if what == 'jpeg': 
+                blob_ext = '.jpg'
+            elif what == 'png':
+                blob_ext = '.png'
+            elif what == 'bmp':
+                blob_ext = '.bmp'
+            else:
+                error('Unsupported image type for blob %s: %s'%(blob_name, what))
+                exit(-1)
+            os.unlink(blob_name)
+
+            # Now add an extension accordingly.
+            new_blob_name = blob_name + blob_ext
+            blobs[new_blob_name] = blob_data
+
+            # Add the extension for the blob within the converted Markdown.
+            conv.md = conv.md.replace(blob_name, new_blob_name)
+
+        # Add this thread and its blobs to the manifest.
+        pm = {'folder': '.',
+              'file': thread + '.md',
+              'title': conv.title,
+              'parent_id': parent_id,
+              'operation': 'create',
+              'overwrite': True,
+              'images': [k for k in blobs.keys()],
+              'attachments': [],
+              'auto_gen': 'https://salesforce.quip.com/%s'%thread}
+        manifest['pages'].append(pm)
+
+        # Write out the converted doc and the blobs.
+        if output_md:
+            print('quip_to_md: writing %s.md.'%thread)
+            with open('%s.md'%thread, mode='w') as mdy:
+                mdy.write(conv.md)
+        else:
+            zippy.writestr(os.path.join(thread, thread + '.md'), conv.md)
+            for blob_name, blob in blobs.items():
+                zippy.writestr(os.path.join(thread, blob_name), blob)
+
+    # Zip everything up unless we're writing out Markdown directly.
+    import json
+    manifest_path = os.path.join(thread, 'manifest.json')
+    if output_md:
+        print('Writing manifest.json.')
+        with open(manifest_path, mode='w') as manny:
+            manny.write(json.dumps(manifest))
+    else:
+        # Write the manifest to the top level of the zip file.
+        zippy.writestr(manifest_path, json.dumps(manifest))
+
+        # Close the zipfile.
+        print('quip_to_md: writing %s.'%zip_path.replace(os.getcwd()+os.path.sep, ''))
+        zippy.close()
+
+def main():
+
+    quip_server = 'https://platform.quip.com'
+
+    # Program description.
+    desc = """Converts a list of Quip "threads" (12-character URL suffixes) 
+to Markdown, placing all related resources into a zip file with a JSON 
+manifest that allows Metro to import it to Confluence."""
+
+    # Use Python's nifty-keen argument parser.
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description = desc)
+    parser.add_argument('threads', metavar='threads', type=str, nargs='+',
+                        help='The Quip threads to convert to Markdown.')
+    parser.add_argument('-p', '--parentid', metavar='parentid', type=int, 
+                        default=None,
+                        help='The ID of the Confluence parent page under which the Quip thread will be published.')
+    parser.add_argument('-u', '--user', metavar='user', type=str,
+                        default=None,
+                        help='The SSO username used to retrieve the Quip thread.')
+    parser.add_argument('-H', '--html', action='store_true', default=False,
+                        help='Output HTML from each Quip thread to <thread>.html')
+    parser.add_argument('-M', '--markdown', action='store_true', default=False,
+                        help='Output converted Markdown from each Quip thread to <thread>.md instead of a zip file. (Also writes manifest.json.)')
+    parser.add_argument('-z', '--zipfile', metavar='zipfile', type=str,
+                        default=None,
+                        help='Specify the name of the zipfile to write. If this is not given, a timestamp-based name is generated.')
+    options = parser.parse_args()
+
+    # Validate.
+    if options.parentid is None:
+        parser.error('Confluence parent page ID (-p) is required.')
+    if options.zipfile is not None and options.markdown:
+        parser.error('Only one of -z and -M may be given.')
+
+    # Authenticate.
+    client = authenticate(options.user)
+
+    # Open a zipfile that stores the converted threads.
+    if options.zipfile is None:
+        import datetime
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S')
+        zip_path = os.path.join(os.getcwd(), 'Metro­quip­%s.zip'%timestamp)
+    else:
+        zip_path = options.zipfile
+
+    # Convert.
+    convert_threads(client, options, zip_path)
+
+    # Give our gallant user a hint about what to do next.
+    if not options.markdown:
+        print('You can import this content to Confluence using the following command:')
+        print('./import_pages -z %s -u %s'%(zip_path.replace(os.getcwd()+os.path.sep, ''), os.environ['USER']))
+
+if __name__ == "__main__": 
+    main()
